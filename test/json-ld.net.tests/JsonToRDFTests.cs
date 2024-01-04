@@ -10,7 +10,7 @@ public class JsonToRDFTests
     [Fact]
     public void TransformJsonToRDF()
     {
-        var json = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Json", "ed25519signature2020-cred-without-proof.json"));
+        var json = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Json", "credential.json"));
         var document = JObject.Parse(json);
         var rdf = (RDFDataset)JsonLdProcessor.ToRDF(document);
         var serialized = RDFDatasetUtils.ToNQuads(rdf);

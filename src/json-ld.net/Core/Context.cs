@@ -377,7 +377,10 @@ namespace JsonLD.Core
 				string type = (string)val["@type"];
 				try
 				{
-					type = this.ExpandIri((string)val["@type"], false, true, context, defined, types);
+					if(type != "@json")
+					{
+                        type = this.ExpandIri((string)val["@type"], false, true, context, defined, types);
+                    }
 				}
 				catch (JsonLdError error)
 				{
@@ -389,7 +392,7 @@ namespace JsonLD.Core
 				}
 				// TODO: fix check for absoluteIri (blank nodes shouldn't count, at
 				// least not here!)
-				if ("@id".Equals(type) || "@vocab".Equals(type) || (!type.StartsWith("_:") && JsonLdUtils
+				if ("@id".Equals(type) || "@vocab".Equals(type) || "@json".Equals(type) || (!type.StartsWith("_:") && JsonLdUtils
 					.IsAbsoluteIri(type)))
 				{
 					definition["@type"] = type;
