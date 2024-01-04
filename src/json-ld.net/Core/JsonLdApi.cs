@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using JsonLD.Core;
 using JsonLD.Util;
 using Newtonsoft.Json.Linq;
-using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace JsonLD.Core
 {
@@ -482,9 +480,19 @@ namespace JsonLD.Core
                     // access helper
                     IDictionary<string, JToken> elem = (JObject)element;
                     // 5)
+                    var types = new List<string>();
+                    if(elem.ContainsKey("type"))
+                    {
+                        var jArr = elem["type"] as JArray;
+                        if(jArr != null)
+                        {
+                            types = jArr.Select(a => a.ToString()).ToList();
+                        }
+                    }
+
                     if (elem.ContainsKey("@context"))
                     {
-                        activeCtx = activeCtx.Parse(elem["@context"]);
+                        activeCtx = activeCtx.Parse(elem["@context"], types);
                     }
                     // 6)
                     JObject result = new JObject();
@@ -1321,7 +1329,7 @@ namespace JsonLD.Core
             {
                 return (string)blankNodeIdentifierMap[id];
             }
-            string bnid = "_:b" + blankNodeCounter++;
+            string bnid = "_:c14n" + blankNodeCounter++;
             if (id != null)
             {
                 blankNodeIdentifierMap[id] = bnid;

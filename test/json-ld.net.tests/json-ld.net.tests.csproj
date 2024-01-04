@@ -47,6 +47,12 @@
     <None Update="ExtendedFunctionality\Sorting\fromRdf-in.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Json\ed25519signature2020-proof-options.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Json\ed25519signature2020-cred-without-proof.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

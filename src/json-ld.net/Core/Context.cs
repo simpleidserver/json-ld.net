@@ -1,19 +1,16 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using JsonLD.Core;
 using JsonLD.Util;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace JsonLD.Core
 {
-	/// <summary>
-	/// A helper class which still stores all the values in a map but gives member
-	/// variables easily access certain keys
-	/// </summary>
-	/// <author>tristan</author>
-	//[System.Serializable]
-	public class Context : JObject
+    /// <summary>
+    /// A helper class which still stores all the values in a map but gives member
+    /// variables easily access certain keys
+    /// </summary>
+    /// <author>tristan</author>
+    //[System.Serializable]
+    public class Context : JObject
     {
         private JsonLdOptions options;
 
@@ -134,7 +131,7 @@ namespace JsonLD.Core
 		/// <returns></returns>
 		/// <exception cref="JsonLdError">JsonLdError</exception>
 		/// <exception cref="JsonLD.Core.JsonLdError"></exception>
-		internal virtual JsonLD.Core.Context Parse(JToken localContext, List<string> remoteContexts)
+		internal virtual JsonLD.Core.Context Parse(JToken localContext, List<string> remoteContexts, List<string> types = null)
 		{
 			if (remoteContexts == null)
 			{
@@ -204,7 +201,7 @@ namespace JsonLD.Core
 							}
                             eachContext = ((JObject)remoteContext)["@context"];
 							// 3.2.4
-							result = result.Parse(eachContext, remoteContexts);
+							result = result.Parse(eachContext, remoteContexts, types);
 							// 3.2.5
 							continue;
 						}
@@ -308,16 +305,16 @@ namespace JsonLD.Core
 					{
 						continue;
 					}
-                    result.CreateTermDefinition((JObject)eachContext, key, defined);
+                    result.CreateTermDefinition((JObject)eachContext, key, defined, types);
 				}
 			}
 			return result;
 		}
 
 		/// <exception cref="JsonLD.Core.JsonLdError"></exception>
-		internal virtual JsonLD.Core.Context Parse(JToken localContext)
+		internal virtual JsonLD.Core.Context Parse(JToken localContext, List<string> types = null)
 		{
-			return this.Parse(localContext, new List<string>());
+			return this.Parse(localContext, new List<string>(), types);
 		}
 
 		/// <summary>
@@ -331,7 +328,7 @@ namespace JsonLD.Core
 		/// <exception cref="JsonLdError">JsonLdError</exception>
 		/// <exception cref="JsonLD.Core.JsonLdError"></exception>
 		private void CreateTermDefinition(JObject context, string term
-			, IDictionary<string, bool> defined)
+			, IDictionary<string, bool> defined, List<string> types = null)
 		{
 			if (defined.ContainsKey(term))
 			{
@@ -363,7 +360,8 @@ namespace JsonLD.Core
 			}
 			if (!(value is JObject))
 			{
-				throw new JsonLdError(JsonLdError.Error.InvalidTermDefinition, value);
+				return;
+				// throw new JsonLdError(JsonLdError.Error.InvalidTermDefinition, value);
 			}
 			// casting the value so it doesn't have to be done below everytime
 			JObject val = (JObject)value;
@@ -379,7 +377,7 @@ namespace JsonLD.Core
 				string type = (string)val["@type"];
 				try
 				{
-					type = this.ExpandIri((string)val["@type"], false, true, context, defined);
+					type = this.ExpandIri((string)val["@type"], false, true, context, defined, types);
 				}
 				catch (JsonLdError error)
 				{
@@ -413,8 +411,7 @@ namespace JsonLD.Core
 					throw new JsonLdError(JsonLdError.Error.InvalidIriMapping, "Expected String for @reverse value. got "
 						 + (val["@reverse"].IsNull() ? "null" : val["@reverse"].GetType().ToString()));
 				}
-				string reverse = this.ExpandIri((string)val["@reverse"], false, true, context, defined
-					);
+				string reverse = this.ExpandIri((string)val["@reverse"], false, true, context, defined, types);
 				if (!JsonLdUtils.IsAbsoluteIri(reverse))
 				{
 					throw new JsonLdError(JsonLdError.Error.InvalidIriMapping, "Non-absolute @reverse IRI: "
@@ -449,7 +446,7 @@ namespace JsonLD.Core
 					throw new JsonLdError(JsonLdError.Error.InvalidIriMapping, "expected value of @id to be a string"
 						);
 				}
-				string res = this.ExpandIri((string)val["@id"], false, true, context, defined);
+				string res = this.ExpandIri((string)val["@id"], false, true, context, defined, types);
 				if (JsonLdUtils.IsKeyword(res) || JsonLdUtils.IsAbsoluteIri(res))
 				{
 					if ("@context".Equals(res))
@@ -475,7 +472,7 @@ namespace JsonLD.Core
 					string suffix = JsonLD.JavaCompat.Substring(term, colIndex + 1);
 					if (context.ContainsKey(prefix))
 					{
-						this.CreateTermDefinition(context, prefix, defined);
+						this.CreateTermDefinition(context, prefix, defined, types);
 					}
 					if (termDefinitions.ContainsKey(prefix))
 					{
@@ -504,12 +501,16 @@ namespace JsonLD.Core
 			if (val.ContainsKey("@container"))
 			{
 				string container = (string)val["@container"];
-				if (!"@list".Equals(container) && !"@set".Equals(container) && !"@index".Equals(container
-					) && !"@language".Equals(container))
-				{
-					throw new JsonLdError(JsonLdError.Error.InvalidContainerMapping, "@container must be either @list, @set, @index, or @language"
-						);
-				}
+				if(options.GetProcessingMode() == "json-ld-1.0")
+                {
+                    if (!"@list".Equals(container) && !"@set".Equals(container) && !"@index".Equals(container
+                        ) && !"@language".Equals(container))
+                    {
+                        throw new JsonLdError(JsonLdError.Error.InvalidContainerMapping, "@container must be either @list, @set, @index, or @language"
+                            );
+                    }
+                }
+
 				definition["@container"] = container;
 			}
 			// 17)
@@ -526,7 +527,28 @@ namespace JsonLD.Core
 						);
 				}
 			}
-			// 18)
+
+			// 21)
+			if(val.ContainsKey("@context") && types != null && types.Contains(term))
+            {
+                var subContext = val["@context"];
+				if(options.GetProcessingMode() == "json-ld-1.0")
+				{
+                    throw new JsonLdError(JsonLdError.Error.InvalidContainerMapping, "invalid term definition @context has been detected");
+                }
+
+				var newContext = this.Parse(subContext, new List<string>());
+				foreach(var key in newContext.termDefinitions.GetKeys())
+				{
+					if(!this.termDefinitions.ContainsKey(key))
+					{
+						var json = newContext.termDefinitions[key].ToString();
+						this.termDefinitions.Add(key, JObject.Parse(json));
+					}
+				}
+            }
+
+			// 28)
 			this.termDefinitions[term] = definition;
 			defined[term] = true;
 		}
@@ -543,7 +565,7 @@ namespace JsonLD.Core
 		/// <returns></returns>
 		/// <exception cref="JsonLdError">JsonLdError</exception>
 		/// <exception cref="JsonLD.Core.JsonLdError"></exception>
-		internal virtual string ExpandIri(string value, bool relative, bool vocab, JObject context, IDictionary<string, bool> defined)
+		internal virtual string ExpandIri(string value, bool relative, bool vocab, JObject context, IDictionary<string, bool> defined, List<string> types = null)
 		{
 			// 1)
 			if (value == null || JsonLdUtils.IsKeyword(value))
@@ -553,7 +575,7 @@ namespace JsonLD.Core
 			// 2)
 			if (context != null && context.ContainsKey(value) && defined.ContainsKey(value) && !defined[value])
 			{
-				this.CreateTermDefinition(context, value, defined);
+				this.CreateTermDefinition(context, value, defined, types);
 			}
 			// 3)
 			if (vocab && this.termDefinitions.ContainsKey(value))
@@ -1224,14 +1246,14 @@ namespace JsonLD.Core
 			{
 				// TODO: i'm pretty sure value should be a string if the @type is
 				// @id
-				rval["@id"] = ExpandIri((string)value, true, false, null, null);
+				rval["@id"] = ExpandIri((string)value, true, false, null, null, null);
 				return rval;
 			}
 			// 2)
 			if (td != null && td["@type"].SafeCompare("@vocab"))
 			{
 				// TODO: same as above
-				rval["@id"] = ExpandIri((string)value, true, true, null, null);
+				rval["@id"] = ExpandIri((string)value, true, true, null, null, null);
 				return rval;
 			}
 			// 3)

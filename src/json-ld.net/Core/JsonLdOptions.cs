@@ -28,7 +28,7 @@ namespace JsonLD.Core
 
         private JObject expandContext = null;
 
-        private string processingMode = "json-ld-1.0";
+        private string processingMode = "json-ld-1.1";
 
         private bool? embed = null;
 
