@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace JsonLD.Core
 {
-    internal class RDFDatasetUtils
+    public class RDFDatasetUtils
     {
         /// <summary>Creates an array of RDF triples for the given graph.</summary>
         /// <remarks>Creates an array of RDF triples for the given graph.</remarks>
@@ -14,7 +14,7 @@ namespace JsonLD.Core
         /// <param name="namer">a UniqueNamer for assigning blank node names.</param>
         /// <returns>the array of RDF triples for the given graph.</returns>
         [Obsolete]
-        internal static JArray GraphToRDF(JObject graph, UniqueNamer
+        public static JArray GraphToRDF(JObject graph, UniqueNamer
              namer)
         {
             // use RDFDataset.graphToRDF

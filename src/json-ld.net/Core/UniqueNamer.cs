@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace JsonLD.Core
 {
-    internal class UniqueNamer
+    public class UniqueNamer
     {
         private readonly string prefix;
 
